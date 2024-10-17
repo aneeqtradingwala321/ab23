@@ -1,0 +1,118 @@
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+canvas.width = 400;
+canvas.height = 600;
+
+// Player variables
+const player = {
+    x: canvas.width / 2 - 20,
+    y: canvas.height - 40,
+    width: 40,
+    height: 20,
+    speed: 5,
+    bullets: []
+};
+
+// Enemy variables
+const enemies = [];
+const enemyWidth = 40;
+const enemyHeight = 20;
+const enemySpeed = 2;
+
+// Bullet variables
+const bulletSpeed = 7;
+
+// Controls
+let keys = {};
+
+// Spawn enemies
+function spawnEnemy() {
+    const x = Math.random() * (canvas.width - enemyWidth);
+    enemies.push({ x: x, y: 0 });
+}
+
+// Update game objects
+function update() {
+    // Player movement
+    if (keys['ArrowLeft'] && player.x > 0) {
+        player.x -= player.speed;
+    }
+    if (keys['ArrowRight'] && player.x < canvas.width - player.width) {
+        player.x += player.speed;
+    }
+
+    // Update bullets
+    player.bullets.forEach((bullet, index) => {
+        bullet.y -= bulletSpeed;
+        if (bullet.y < 0) {
+            player.bullets.splice(index, 1); // Remove bullets that leave the screen
+        }
+    });
+
+    // Update enemies
+    enemies.forEach((enemy, index) => {
+        enemy.y += enemySpeed;
+        if (enemy.y > canvas.height) {
+            enemies.splice(index, 1); // Remove enemies that leave the screen
+        }
+
+        // Check for collision with bullets
+        player.bullets.forEach((bullet, bIndex) => {
+            if (
+                bullet.x < enemy.x + enemyWidth &&
+                bullet.x + 5 > enemy.x &&
+                bullet.y < enemy.y + enemyHeight &&
+                bullet.y + 10 > enemy.y
+            ) {
+                enemies.splice(index, 1); // Remove enemy
+                player.bullets.splice(bIndex, 1); // Remove bullet
+            }
+        });
+    });
+}
+
+// Draw player, bullets, and enemies
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw player
+    ctx.fillStyle = '#00ff00';
+    ctx.fillRect(player.x, player.y, player.width, player.height);
+
+    // Draw bullets
+    ctx.fillStyle = '#ff0000';
+    player.bullets.forEach(bullet => {
+        ctx.fillRect(bullet.x, bullet.y, 5, 10);
+    });
+
+    // Draw enemies
+    ctx.fillStyle = '#ff00ff';
+    enemies.forEach(enemy => {
+        ctx.fillRect(enemy.x, enemy.y, enemyWidth, enemyHeight);
+    });
+}
+
+// Main game loop
+function gameLoop() {
+    update();
+    draw();
+    requestAnimationFrame(gameLoop);
+}
+
+// Handle keyboard input
+window.addEventListener('keydown', (e) => {
+    keys[e.key] = true;
+    if (e.key === ' ') {
+        // Shoot bullet
+        player.bullets.push({ x: player.x + player.width / 2 - 2.5, y: player.y });
+    }
+});
+
+window.addEventListener('keyup', (e) => {
+    keys[e.key] = false;
+});
+
+// Start the game
+setInterval(spawnEnemy, 1000);
+gameLoop();
